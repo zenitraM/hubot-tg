@@ -1,5 +1,5 @@
 # hubot-tg
-This is a [Hubot](http://hubot.github.com/) adapter for Telegram. 
+This is a [Hubot](http://hubot.github.com/) adapter for [Telegram](http://telegram.org). 
 
 As there are not any fully-working Telegram client implementations in Node right now,
 it uses [tg](https://github.com/vysheng/tg) to send and receive messages.
@@ -41,3 +41,7 @@ You can set ```HUBOT_TG_HOST``` and ```HUBOT_TG_PORT``` env variables, to set ho
 
 ### tg
 You can set the env variable ```TG_HUBOT_URL``` to where to find Hubot.
+
+## Acknowledgements
+- @yagop for [telegram-bot](https://github.com/yagop/telegram-bot), which inspired this
+
