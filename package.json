@@ -1,0 +1,24 @@
+{
+  "name": "hubot-tg",
+  "version": "0.0.1",
+  "description": "Hubot adapter for the tg Telegram cli",
+  "main": "src/tg",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/zenitram/hubot-tg.git"
+  },
+  "keywords": [
+    "hubot",
+    "tg",
+    "telegram"
+  ],
+  "author": "Alejandro Martínez",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zenitram/hubot-tg/issues"
+  },
+  "homepage": "https://github.com/zenitram/hubot-tg"
+}
