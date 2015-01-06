@@ -30,9 +30,9 @@ Setup your own Hubot and add this adapter:
 - Check out the [hubot docs](https://github.com/github/hubot/tree/master/docs) for further guidance on how to build your bot
 
 
-Then run telegram-cli with the included lua script:
+Then run telegram-cli with the included lua script and make it listen into the port specified on ``HUBOT_TG_PORT`` (by default 1123):
 - `telegram-cli -s hubot.lua -P 1123`
-
+All of the authentication is handled by telegram-cli so there's no need to configure anything else, just follow the steps.
 
 ## Config parameters
 
