@@ -12,7 +12,7 @@ to receive messages, and connects to tg telnet interface to send them.
 ## Supported features and TODO
 - [x] Sending/receiving chat messages
 - [x] Sending/receiving group messages
-- [ ] Sending multiline messages (not supported on tg telnet interface)
+- [x] Sending multiline messages (using double quotes: vysheng/tg#238)
 - [ ] Sending/receiving secret chat messages
 - [ ] Sending images and media
 
