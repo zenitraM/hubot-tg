@@ -1,27 +1,98 @@
 {Robot, Adapter, TextMessage, EnterMessage, LeaveMessage, TopicMessage} = require 'hubot'
-net           = require 'net'
+net = require('net')
+fs = require('fs')
+url = require('url')
+http = require('http')
+https = require('https')
+exec = require('child_process').exec
+spawn = require('child_process').spawn
+fileType = require('file-type')
+
 
 class Tg extends Adapter
+
   constructor: (robot) ->
     @robot = robot
     @port = process.env['HUBOT_TG_PORT'] || 1123
     @host = process.env['HUBOT_TG_HOST'] || 'localhost'
+    @imageExtensions = ["jpg", "png"]
+    @tempdir = process.env['HUBOT_TG_TMPDIR'] || '/srv/hubot/bin/downloads/'
+
 
   send: (envelope, strings...) ->
-    # Flatten out strings to send, as the tg telnet interface does not allow sending newlines
-    flattened = []
-    for str in strings
-      if typeof str != 'undefined'
-        for line in str.toString().split(/\r?\n/)
-          if Array.isArray line
-            flattened = flattened.concat line
+    if strings.length < 2 and strings.toString().match(/^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=!]*)/i)
+      file_url = strings.toString()
+      agent = if file_url.match(/^https/i) then https else http
+      agent.get file_url, (res) =>
+        res.once 'data', (chunk) =>
+          res.destroy()
+          # fileType(chunk)
+          # => {ext: 'gif', mime: 'image/gif'}
+          if ~@imageExtensions.indexOf fileType(chunk)?.ext
+            @get_image(envelope, file_url, @host, @port, @send_photo)
           else
-            flattened.push line
+            @send_text(envelope, strings)
 
+        res.on 'error', (err) =>
+          @send_text(envelope, strings)
+    else
+      @send_text(envelope, strings)
+
+
+  send_text: (envelope, strings...) ->
+    # Send multiline text using double quotes:
+    # msg <user> "first\nsecond\nthird"
     client = net.connect @port, @host, ->
-      messages = flattened.map (str) -> "msg "+envelope.room+" \""+str.replace(/"/g, '\\"')+"\"\n"
-      client.write messages.join("\n"), ->
+      flattened = strings.join('\n').replace(/\n/g, '\\n').replace(/"/g, '\\"')
+      messages = "msg #{envelope.room} \"#{flattened}\"\n"
+      client.write messages, ->
         client.end()
+
+
+  get_image: (envelope, imageURL, destHost, destPort, callback) ->
+        # App variables
+        file_url = imageURL
+        DOWNLOAD_DIR = @tempdir
+        # We will be downloading the files to a directory, so make sure it's there
+        # This step is not required if you have manually created the directory
+        mkdir = 'mkdir -p ' + DOWNLOAD_DIR
+        child = exec(mkdir, (err, stdout, stderr) ->
+          if err
+            throw err
+          else
+            download_file_httpget file_url
+          return
+        )
+        # Function to download file using HTTP.get
+
+        download_file_httpget = (file_url) ->
+          agent = if file_url.match(/^https/i) then https else http
+          file_name = url.parse(file_url).pathname.split('/').pop()
+          file = fs.createWriteStream(DOWNLOAD_DIR + file_name)
+          agent.get file_url, (res) ->
+            res.on('data', (data) ->
+              file.write data
+              return
+            ).on 'end', ->
+              file.end()
+              console.log file_name + ' downloaded to ' + DOWNLOAD_DIR
+              callback(envelope, destHost, destPort, fileFullPath)
+              return
+            return
+          return
+        fileFullPath = DOWNLOAD_DIR + url.parse(file_url).pathname.split('/').pop()
+        fileFullPath
+
+
+  send_photo: (envelope, destHost, destPort, fileLocation) ->
+      #console.log 'Connecting to: ' + destHost + ':' + destPort
+      #console.log 'Sending photo ' + fileLocation + ' for: ' + envelope.room
+      client = net.connect destPort, destHost, ->
+          message = "send_photo " + envelope.room + " " + fileLocation + "\n"
+          client.write message, ->
+              client.end ->
+                fs.unlink(fileLocation)
+                console.log 'File ' + fileLocation + ' deleted'
 
 
   emote: (envelope, strings...) ->
