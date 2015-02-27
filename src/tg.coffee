@@ -3,6 +3,7 @@ net = require('net')
 fs = require('fs')
 url = require('url')
 http = require('http')
+https = require('https')
 exec = require('child_process').exec
 spawn = require('child_process').spawn
 fileType = require('file-type')
