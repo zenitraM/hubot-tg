@@ -21,11 +21,8 @@ class Tg extends Adapter
   send: (envelope, strings...) ->
     if strings.length < 2 and strings.toString().match(/^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=!]*)/i)
       file_url = strings.toString()
-      options =
-        host: url.parse(file_url).host
-        port: 80
-        path: url.parse(file_url).pathname
-      http.get options, (res) =>
+      agent = if file_url.match(/^https/i) then https else http
+      agent.get file_url, (res) =>
         res.once 'data', (chunk) =>
           res.destroy()
           # fileType(chunk)
@@ -68,13 +65,10 @@ class Tg extends Adapter
         # Function to download file using HTTP.get
 
         download_file_httpget = (file_url) ->
-          options =
-            host: url.parse(file_url).host
-            port: 80
-            path: url.parse(file_url).pathname
+          agent = if file_url.match(/^https/i) then https else http
           file_name = url.parse(file_url).pathname.split('/').pop()
           file = fs.createWriteStream(DOWNLOAD_DIR + file_name)
-          http.get options, (res) ->
+          agent.get options, (res) ->
             res.on('data', (data) ->
               file.write data
               return
