@@ -33,12 +33,12 @@ class Tg extends Adapter
           if ~@imageExtensions.indexOf fileType(chunk)?.ext
             @get_image(envelope, file_url, @host, @port, @send_photo)
           else
-            @send_text()
+            @send_text(envelope, strings)
 
         res.on 'error', (err) =>
-          @send_text()
+          @send_text(envelope, strings)
     else
-      @send_text()
+      @send_text(envelope, strings)
 
 
   send_text: (envelope, strings...) ->
