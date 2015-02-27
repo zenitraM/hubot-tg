@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/zenitram/hubot-tg/issues"
   },
-  "homepage": "https://github.com/zenitram/hubot-tg"
+  "homepage": "https://github.com/zenitram/hubot-tg",
+  "dependencies": {
+    "file-type": "^2.2.0"
+  }
 }

@@ -1,26 +1,47 @@
 {Robot, Adapter, TextMessage, EnterMessage, LeaveMessage, TopicMessage} = require 'hubot'
-net           = require 'net'
+net = require('net')
 fs = require('fs')
 url = require('url')
 http = require('http')
 exec = require('child_process').exec
 spawn = require('child_process').spawn
+fileType = require('file-type')
+
 
 class Tg extends Adapter
+
   constructor: (robot) ->
     @robot = robot
     @port = process.env['HUBOT_TG_PORT'] || 1123
     @host = process.env['HUBOT_TG_HOST'] || 'localhost'
-    @imageExtensions = [".jpg",".png", ".jpeg"]
+    @imageExtensions = ["jpg", "png"]
     @tempdir = process.env['HUBOT_TG_TMPDIR'] || '/srv/hubot/bin/downloads/'
 
-  send: (envelope, strings...) ->
-    if strings.length < 2 and (@imageExtensions.some (word) -> ~strings.toString().indexOf word)
-      myString = strings.toString()
-      #@get_image myString, (imageFile) -> @send_photo envelope, imageFile
-      @get_image(envelope, myString, @host, @port, @send_photo)
-      return
 
+  send: (envelope, strings...) ->
+    if strings.length < 2 and strings.toString().match(/^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=!]*)/i)
+      file_url = strings.toString()
+      options =
+        host: url.parse(file_url).host
+        port: 80
+        path: url.parse(file_url).pathname
+      http.get options, (res) =>
+        res.once 'data', (chunk) =>
+          res.destroy()
+          # fileType(chunk)
+          # => {ext: 'gif', mime: 'image/gif'}
+          if ~@imageExtensions.indexOf fileType(chunk)?.ext
+            @get_image(envelope, file_url, @host, @port, @send_photo)
+          else
+            @send_text()
+
+        res.on 'error', (err) =>
+          @send_text()
+    else
+      @send_text()
+
+
+  send_text: (envelope, strings...) ->
     # Send multiline text using double quotes:
     # msg <user> "first\nsecond\nthird"
     client = net.connect @port, @host, ->
