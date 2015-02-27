@@ -68,7 +68,7 @@ class Tg extends Adapter
           agent = if file_url.match(/^https/i) then https else http
           file_name = url.parse(file_url).pathname.split('/').pop()
           file = fs.createWriteStream(DOWNLOAD_DIR + file_name)
-          agent.get options, (res) ->
+          agent.get file_url, (res) ->
             res.on('data', (data) ->
               file.write data
               return
