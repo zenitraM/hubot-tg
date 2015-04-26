@@ -8,21 +8,11 @@ class Tg extends Adapter
     @host = process.env['HUBOT_TG_HOST'] || 'localhost'
 
   send: (envelope, strings...) ->
-    # Flatten out strings to send, as the tg telnet interface does not allow sending newlines
-    flattened = []
-    for str in strings
-      if typeof str != 'undefined'
-        for line in str.toString().split(/\r?\n/)
-          if Array.isArray line
-            flattened = flattened.concat line
-          else
-            flattened.push line
-
+    str = strings.join "\n"
     client = net.connect @port, @host, ->
-      messages = flattened.map (str) -> "msg "+envelope.room+" \""+str.replace(/"/g, '\\"')+"\"\n"
-      client.write messages.join("\n"), ->
+      message = "msg "+envelope.room+" \""+str.replace(/"/g, '\\"').replace(/\n/g, '\\n')+"\"\n"
+      client.write message, ->
         client.end()
-
 
   emote: (envelope, strings...) ->
     @send envelope, "* #{str}" for str in strings
