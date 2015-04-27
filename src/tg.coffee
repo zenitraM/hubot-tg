@@ -1,18 +1,72 @@
 {Robot, Adapter, TextMessage, EnterMessage, LeaveMessage, TopicMessage} = require 'hubot'
-net           = require 'net'
+{exec, spawn} = require('child_process')
+net  = require 'net'
+fs   = require('fs')
+url  = require('url')
+http = require('http')
+
 
 class Tg extends Adapter
   constructor: (robot) ->
     @robot = robot
     @port = process.env['HUBOT_TG_PORT'] || 1123
     @host = process.env['HUBOT_TG_HOST'] || 'localhost'
+    @tempdir = process.env['HUBOT_TG_TMPDIR'] || '/srv/hubot/bin/downloads/'
+    @imageExtensions = [".jpg",".png", ".jpeg"]
 
   send: (envelope, strings...) ->
+    if strings.length < 2 and (@imageExtensions.some (word) -> ~strings.toString().indexOf word)
+      myString = strings.toString()
+      @get_image(envelope, myString, @host, @port, @send_photo)
+      return
+
     str = strings.join "\n"
     client = net.connect @port, @host, ->
       message = "msg "+envelope.room+" \""+str.replace(/"/g, '\\"').replace(/\n/g, '\\n')+"\"\n"
       client.write message, ->
         client.end()
+  
+  get_image: (envelope, imageURL, destHost, destPort, callback) ->
+    file_url = imageURL
+    DOWNLOAD_DIR = @tempdir
+    
+    mkdir = 'mkdir -p ' + DOWNLOAD_DIR
+    child = exec(mkdir, (err, stdout, stderr) ->
+      if err
+        throw err
+      else
+        download_file_httpget file_url
+      return
+    )
+
+    download_file_httpget = (file_url) ->
+      options =
+        host: url.parse(file_url).host
+        port: 80
+        path: url.parse(file_url).pathname
+      file_name = url.parse(file_url).pathname.split("/").pop()
+      file = fs.createWriteStream(DOWNLOAD_DIR + file_name)
+      http.get options, (res) ->
+        res.on("data", (data) ->
+          file.write data
+          return
+        ).on "end", ->
+          file.end()
+          console.log file_name + " downloaded to " + DOWNLOAD_DIR
+          callback(envelope, destHost, destPort, fileFullPath)
+          return
+        return
+      return
+    fileFullPath = DOWNLOAD_DIR + url.parse(file_url).pathname.split('/').pop()
+    fileFullPath
+
+  send_photo: (envelope, destHost, destPort, fileLocation) ->
+    client = net.connect destPort, destHost, ->
+      message = "send_photo " + envelope.room + " " + fileLocation + "\n"
+      client.write message, ->
+        client.end ->
+          fs.unlink(fileLocation)
+          console.log "File " + fileLocation + " deleted"
 
   emote: (envelope, strings...) ->
     @send envelope, "* #{str}" for str in strings
