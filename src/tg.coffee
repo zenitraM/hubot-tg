@@ -11,8 +11,8 @@ class Tg extends Adapter
     @robot = robot
     @port = process.env['HUBOT_TG_PORT'] || 1123
     @host = process.env['HUBOT_TG_HOST'] || 'localhost'
-    @tempdir = process.env['HUBOT_TG_TMPDIR'] || '/srv/hubot/bin/downloads/'
-    @imageExtensions = [".jpg",".png", ".jpeg"]
+    @tempdir = process.env['HUBOT_TG_TMPDIR'] || '/tmp/hubot'
+    @imageExtensions = [".jpg", ".png", ".jpeg"]
 
   send: (envelope, strings...) ->
     if strings.length < 2 and (@imageExtensions.some (word) -> ~strings.toString().indexOf word)
