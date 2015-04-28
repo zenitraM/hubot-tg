@@ -22,9 +22,11 @@ class Tg extends Adapter
   send: (envelope, lines...) ->
     text = []
     lines.map (line) =>
-      if not line.match /\.(jpeg|jpg|png)$/g
+      imageUrl = line.split('#')[0].split('?')[0]
+      if not imageUrl.match /\.jpe?g|png$/g
         text.push line
       else
+        console.log 'Found image ' + imageUrl
         if text.length
           @send_text envelope, text
           text = []
