@@ -1,86 +1,83 @@
-{Robot, Adapter, TextMessage, EnterMessage, LeaveMessage, TopicMessage} = require 'hubot'
-{exec, spawn} = require('child_process')
+http = require 'http'
+url  = require 'url'
 net  = require 'net'
-fs   = require('fs')
-url  = require('url')
-http = require('http')
+fs   = require 'fs'
+cp   = require 'child_process'
+
+{ Robot
+, Adapter
+, TextMessage
+, EnterMessage
+, LeaveMessage
+, TopicMessage } = require 'hubot'
 
 
 class Tg extends Adapter
   constructor: (robot) ->
-    @robot = robot
-    @port = process.env['HUBOT_TG_PORT'] || 1123
-    @host = process.env['HUBOT_TG_HOST'] || 'localhost'
-    @tempdir = process.env['HUBOT_TG_TMPDIR'] || '/tmp/hubot'
-    @imageExtensions = [".jpg", ".png", ".jpeg"]
+    @robot   = robot
+    @port    = process.env['HUBOT_TG_PORT'] || 1123
+    @host    = process.env['HUBOT_TG_HOST'] || 'localhost'
+    @tempdir = process.env['HUBOT_TG_TEMP'] || '/tmp/hubot'
 
-  send: (envelope, strings...) ->
-    if strings.length < 2 and (@imageExtensions.some (word) -> ~strings.toString().indexOf word)
-      myString = strings.toString()
-      @get_image(envelope, myString, @host, @port, @send_photo)
-      return
-
-    str = strings.join "\n"
-    client = net.connect @port, @host, ->
-      message = "msg "+envelope.room+" \""+str.replace(/"/g, '\\"').replace(/\n/g, '\\n')+"\"\n"
-      client.write message, ->
-        client.end()
-  
-  get_image: (envelope, imageURL, destHost, destPort, callback) ->
-    file_url = imageURL
-    DOWNLOAD_DIR = @tempdir
-    
-    mkdir = 'mkdir -p ' + DOWNLOAD_DIR
-    child = exec(mkdir, (err, stdout, stderr) ->
-      if err
-        throw err
+  send: (envelope, lines...) ->
+    text = []
+    lines.map (line) =>
+      if not line.match /\.(jpeg|jpg|png)$/g
+        text.push line
       else
-        download_file_httpget file_url
-      return
-    )
+        if text.length
+          @send_text envelope, text
+          text = []
+        @get_image line, (filepath) =>
+          @send_photo envelope, filepath
+    @send_text envelope, text
 
-    download_file_httpget = (file_url) ->
+  get_image: (imageUrl, callback) ->
+    mkdir = 'mkdir -p ' + @tempdir
+    cp.exec mkdir, (err, stdout, stder) =>
+      throw err if err
+
+      filename = url.parse(imageUrl).pathname.split("/").pop()
+      file = fs.createWriteStream(@tempdir + filename)
       options =
-        host: url.parse(file_url).host
+        host: url.parse(imageUrl).host
         port: 80
-        path: url.parse(file_url).pathname
-      file_name = url.parse(file_url).pathname.split("/").pop()
-      file = fs.createWriteStream(DOWNLOAD_DIR + file_name)
-      http.get options, (res) ->
-        res.on("data", (data) ->
-          file.write data
-          return
-        ).on "end", ->
-          file.end()
-          console.log file_name + " downloaded to " + DOWNLOAD_DIR
-          callback(envelope, destHost, destPort, fileFullPath)
-          return
-        return
-      return
-    fileFullPath = DOWNLOAD_DIR + url.parse(file_url).pathname.split('/').pop()
-    fileFullPath
+        path: url.parse(imageUrl).pathname
 
-  send_photo: (envelope, destHost, destPort, fileLocation) ->
-    client = net.connect destPort, destHost, ->
-      message = "send_photo " + envelope.room + " " + fileLocation + "\n"
+      http.get options, (res) =>
+        res.on("data", (data) -> file.write data).on "end", =>
+          file.end()
+          console.log filename + " downloaded to " + @tempdir
+          callback @tempdir + url.parse(imageUrl).pathname.split('/').pop()
+
+  send_photo: (envelope, filepath) ->
+    client = net.connect @port, @host, ->
+      message = "send_photo " + envelope.room + " " + filepath + "\n"
       client.write message, ->
         client.end ->
-          fs.unlink(fileLocation)
-          console.log "File " + fileLocation + " deleted"
+          fs.unlink(filepath)
+          console.log "File " + filepath + " deleted"
 
-  emote: (envelope, strings...) ->
-    @send envelope, "* #{str}" for str in strings
+  send_text: (envelope, lines) ->
+    text = lines.join "\n"
+    client = net.connect @port, @host, ->
+      message = "msg "+envelope.room+" \""+text.replace(/"/g, '\\"').replace(/\n/g, '\\n')+"\"\n"
+      client.write message, ->
+        client.end()
 
-  reply: (envelope, strings...) ->
-    strings = strings.map (s) -> "#{envelope.user.name}: #{s}"
-    @send envelope, strings...
+  emote: (envelope, lines...) ->
+    @send envelope, "* #{line}" for line in lines
+
+  reply: (envelope, lines...) ->
+    lines = lines.map (s) -> "#{envelope.user.name}: #{s}"
+    @send envelope, lines...
 
   entityToID: (entity) ->
     entity.type + "#" + entity.id
 
   run: ->
     self = @
-    # We will listen here to incoming events from tg - inspired on hubot-slack v2
+    # We will listen here to incoming events from tg
     self.robot.router.post "/hubot_tg/msg_receive", (req, res) ->
       msg = req.body
       room = if msg.to.type == 'user' then self.entityToID(msg.from) else self.entityToID(msg.to)
