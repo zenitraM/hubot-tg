@@ -12,9 +12,9 @@ to receive messages, and connects to tg telnet interface to send them.
 ## Supported features and TODO
 - [x] Sending/receiving chat messages
 - [x] Sending/receiving group messages
-- [ ] Sending multiline messages (not supported on tg telnet interface)
+- [x] Sending multiline messages
 - [ ] Sending/receiving secret chat messages
-- [ ] Sending images and media
+- [x] Sending images and media (only images are currently supported)
 
 ## Setup
 
