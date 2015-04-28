@@ -17,7 +17,7 @@ class Tg extends Adapter
     @robot   = robot
     @port    = process.env['HUBOT_TG_PORT'] || 1123
     @host    = process.env['HUBOT_TG_HOST'] || 'localhost'
-    @tempdir = process.env['HUBOT_TG_TEMP'] || '/tmp/hubot'
+    @tempdir = process.env['HUBOT_TG_TEMP'] || '/tmp/hubot/'
 
   send: (envelope, lines...) ->
     text = []
