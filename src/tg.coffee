@@ -26,7 +26,7 @@ class Tg extends Adapter
       if not imageUrl.match /\.jpe?g|png$/g
         text.push line
       else
-        console.log 'Found image ' + imageUrl
+        robot.loggger.info 'Found image ' + imageUrl
         if text.length
           @send_text envelope, text
           text = []
@@ -49,7 +49,7 @@ class Tg extends Adapter
       http.get options, (res) =>
         res.on("data", (data) -> file.write data).on "end", =>
           file.end()
-          console.log filename + " downloaded to " + @tempdir
+          robot.loggger.info filename + " downloaded to " + @tempdir
           callback @tempdir + url.parse(imageUrl).pathname.split('/').pop()
 
   send_raw: (commands, callback) ->
@@ -67,7 +67,7 @@ class Tg extends Adapter
       client.write message, ->
         client.end ->
           fs.unlink(filepath)
-          console.log "File " + filepath + " deleted"
+          robot.loggger.infolog "File " + filepath + " deleted"
 
   send_text: (envelope, lines) ->
     text = lines.join "\n"
