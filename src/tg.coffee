@@ -52,6 +52,15 @@ class Tg extends Adapter
           console.log filename + " downloaded to " + @tempdir
           callback @tempdir + url.parse(imageUrl).pathname.split('/').pop()
 
+  send_raw: (commands, callback) ->
+    client = net.connect @port, @host, ->
+      replies = []
+      commands.map (i) -> client.write i+'\n'
+      client.on 'data', (reply) -> replies.push reply
+      0 while reply.length < commands.length
+      client.end()
+      callback replies
+
   send_photo: (envelope, filepath) ->
     client = net.connect @port, @host, ->
       message = "send_photo " + envelope.room + " " + filepath + "\n"
