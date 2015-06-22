@@ -11,7 +11,6 @@ cp   = require 'child_process'
 , LeaveMessage
 , TopicMessage } = require 'hubot'
 
-
 class Tg extends Adapter
   constructor: (robot) ->
     @robot   = robot
@@ -52,14 +51,12 @@ class Tg extends Adapter
           robot.loggger.info filename + " downloaded to " + @tempdir
           callback @tempdir + url.parse(imageUrl).pathname.split('/').pop()
 
-  send_raw: (commands, callback) ->
-    client = net.connect @port, @host, ->
-      replies = []
-      commands.map (i) -> client.write i+'\n'
-      client.on 'data', (reply) -> replies.push reply
-      0 while reply.length < commands.length
+  send_raw = (command, callback) ->
+    client = net.connect @port, @host, -> client.write command+'\n'
+    client.setEncoding 'utf8'
+    client.on 'data', (reply) ->
+      callback (reply.split '\n')[1..-3]
       client.end()
-      callback replies
 
   send_photo: (envelope, filepath) ->
     client = net.connect @port, @host, ->
