@@ -47,13 +47,6 @@ class Tg extends Adapter
           @robot.logger.info filename + " downloaded to " + @tempdir
           callback @tempdir + url.parse(imageUrl).pathname.split('/').pop()
 
-  send_raw = (command, callback) ->
-    client = net.connect @port, @host, -> client.write command+'\n'
-    client.setEncoding 'utf8'
-    client.on 'data', (reply) ->
-      callback (reply.split '\n')[1..-3]
-      client.end()
-
   send_photo: (envelope, filepath) ->
     client = net.connect @port, @host, ->
       message = "send_photo " + envelope.room + " " + filepath + "\n"
