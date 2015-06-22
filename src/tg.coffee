@@ -4,12 +4,8 @@ net  = require 'net'
 fs   = require 'fs'
 cp   = require 'child_process'
 
-{ Robot
-, Adapter
-, TextMessage
-, EnterMessage
-, LeaveMessage
-, TopicMessage } = require 'hubot'
+{ Adapter
+, TextMessage } = require 'hubot'
 
 class Tg extends Adapter
   constructor: (robot) ->
