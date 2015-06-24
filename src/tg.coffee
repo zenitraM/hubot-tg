@@ -80,7 +80,7 @@ class Tg extends Adapter
       room = if msg.to.type == 'user' then self.entityToID(msg.from) else self.entityToID(msg.to)
       from = self.entityToID(msg.from)
       user = self.robot.brain.userForId from, name: msg.from.print_name, room: room
-      self.receive new TextMessage user, msg.text, msg.id
+      self.receive new TextMessage user, msg.text or '', msg.id
       res.end ""
     self.emit 'connected'
 
