@@ -5,6 +5,7 @@ url = require('url')
 http = require('http')
 exec = require('child_process').exec
 spawn = require('child_process').spawn
+os = require('os')
 
 class Tg extends Adapter
   constructor: (robot) ->
@@ -12,7 +13,8 @@ class Tg extends Adapter
     @port = process.env['HUBOT_TG_PORT'] || 1123
     @host = process.env['HUBOT_TG_HOST'] || 'localhost'
     @imageExtensions = [".jpg",".png", ".jpeg"]
-    @tempdir = process.env['HUBOT_TG_TMPDIR'] || '/srv/hubot/bin/downloads/'
+    @tempdir = os.tmpdir() + '/'
+    @savedFiles = []
 
   send: (envelope, strings...) ->
     if strings.length < 2 and (@imageExtensions.some (word) -> ~strings.toString().indexOf word)
@@ -38,11 +40,22 @@ class Tg extends Adapter
       client.write messages.join("\n"), ->
         client.end()   
 
+  file_reaper: ->
+    for file in @savedFiles
+      fs.unlink file
+      console.log 'File ' + file + ' deleted'
+
+    @savedFiles = []
+
+
+
 
   get_image: (envelope, imageURL, destHost, destPort, callback) ->
         # App variables
         file_url = imageURL
         DOWNLOAD_DIR = @tempdir
+        #Cull any old files laying around
+        @file_reaper()
         # We will be downloading the files to a directory, so make sure it's there
         # This step is not required if you have manually created the directory
         mkdir = 'mkdir -p ' + DOWNLOAD_DIR
@@ -74,6 +87,7 @@ class Tg extends Adapter
             return
           return
         fileFullPath = DOWNLOAD_DIR + url.parse(file_url).pathname.split('/').pop()
+        @add_file fileFullPath
         fileFullPath
         
 
@@ -85,10 +99,11 @@ class Tg extends Adapter
           message = "send_photo " + envelope.room + " " + fileLocation + "\n"
           client.write message, ->
               client.end ->
-                fs.unlink(fileLocation)
-                console.log 'File ' + fileLocation + ' deleted'
+                console.log 'File ' + fileLocation + ' marked for delete'
 
 
+  add_file: (file) ->
+    @savedFiles.push file
 
   emote: (envelope, strings...) ->
     @send envelope, "* #{str}" for str in strings
