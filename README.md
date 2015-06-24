@@ -22,7 +22,7 @@ to receive messages, and connects to tg telnet interface to send them.
 
 Install [tg](https://github.com/vysheng/tg) by cloning the code and
 compiling it (use the latest commit from master). Make sure you have
-Lua installed, so tg is compiled with Lua support.
+python installed (version 2.7), so tg is compiled with python support.
 
 Next, you will need an unused phone number to create a Telegram
 account. You can get one by signing up with
@@ -55,32 +55,6 @@ User your name offline (was online [2015/01/12 08:26:13])
 > msg your_name hello world
 ```
 
-### Install luasocket
-
-[luasocket](http://w3.impa.br/~diego/software/luasocket/) is often
-available as 'luasocket' or 'lua-socket' from your operating system
-package manager:
-
-```
-$ sudo pacman -S lua-socket
-```
-
-Alternatively, install a Lua package manager, such as luarocks, and
-use that:
-
-```
-$ sudo pacman -S luarocks
-$ luarocks install luasocket
-```
-
-If this works, you should be able to require it in Lua:
-
-```
-$ lua
-> require "socket"
->
-```
-
 ### Setup your own hubot
 
 Setup a Hubot:
@@ -107,7 +81,7 @@ In one terminal, start telegram-cli on a specific port:
 ```
 $ cd /path/to/hubot
 $ cd node_modules/hubot-tg
-$ /path/to/tg/bin/telegram-cli -s hubot.lua -P 1123
+$ /path/to/tg/bin/telegram-cli -Z hubot.py -P 1123
 ```
 
 In another terminal, start Hubot. If you aren't using port 1123,
