@@ -22,7 +22,7 @@ to receive messages, and connects to tg telnet interface to send them.
 
 Install [tg](https://github.com/vysheng/tg) by cloning the code and
 compiling it (use the latest commit from master). Make sure you have
-python installed (version 2.7), so tg is compiled with python support.
+python installed (version 3.x), so tg is compiled with python support.
 
 Next, you will need an unused phone number to create a Telegram
 account. You can get one by signing up with

@@ -1,48 +1,51 @@
-from __future__ import print_function, unicode_literals
-
 import tgl
 import os
 import json
 import datetime
-import urllib2
+import urllib.request as request
 
 
+robot_id  = 0
 hubot_url = os.getenv('TG_HUBOT_URL', 'http://localhost:8080/')
-robot_id = 0
+
+msg_keys  = ['action', 'date', 'dest', 'flags', 'fwd_date', 'fwd_src',
+             'id', 'media', 'mention', 'out', 'reply', 'reply_id',
+             'service', 'src', 'text', 'unread']
+chat_keys = ['first_name', 'id', 'info', 'last_name', 'name',
+             'phone', 'type', 'type_name', 'user', 'user_id',
+             'user_status', 'username']
+user_keys = ['id', 'name', 'type', 'type_name']       
 
 
-def todict(obj, depth=0):
+def todict(obj):
   """
   Convert a tgl.Msg or tgl.Peer object into a dictionary in
   order to be able to serialize it with JSON or pickle.
   """
-  if depth > 3:
-    return {}
 
-  d      = {}
-  remap  = {'dest':'to', 'src':'from', 'type_name':'type', 'type':'type_id'}
-  normal = lambda x: not x.startswith('__')
+  res   = {}
+  remap = {'dest':'to', 'src':'from',
+           'type_name':'type', 'type':'type_id'}
 
-  for key in filter(normal, dir(obj)):
-    try:
-      # telegram-cli crashes for no reason
-      if key == 'user_status':
-        continue
+  if isinstance(obj, tgl.Peer):
+    if obj.type_name == 'user':
+      keys = user_keys
+    if obj.type_name == 'chat':
+      keys = chat_keys
+  elif isinstance(obj, tgl.Msg):
+    keys = msg_keys
 
-      val = getattr(obj, key)   # get the value
-      key = remap.get(key, key) # renamp key name
-
-      if callable(val):
-        continue
-      elif isinstance(val, (tgl.Msg, tgl.Peer)):
-        d[key] = todict(val, depth+1)
-      elif isinstance(val, datetime.datetime):
-        d[key] = str(val)
-      else:
-        d[key] = val
-    except tgl.PeerError:
-      continue
-  return d
+  for key in keys:
+    val = getattr(obj, key)
+    key = remap.get(key, key)
+    if isinstance(val, (tgl.Msg, tgl.Peer)):
+      res[key] = todict(val)
+    elif isinstance(val, datetime.datetime):
+      res[key] = str(val)
+    else:
+      res[key] = val
+    
+  return res
 
 
 def receive_msg(msg):
@@ -55,9 +58,9 @@ def receive_msg(msg):
 
   msg.src.mark_read(lambda _:_)
 
-  req = urllib2.Request(hubot_url + 'hubot_tg/msg_receive')
+  req = request.Request(hubot_url + 'hubot_tg/msg_receive')
   req.add_header('Content-Type', 'application/json')
-  urllib2.urlopen(req, json.dumps(todict(msg)))
+  request.urlopen(req, json.dumps(todict(msg)).encode())
 
   
 def update_chat(chat, changes):
