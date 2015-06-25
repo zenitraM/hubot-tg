@@ -11,21 +11,18 @@ hubot_url = os.getenv('TG_HUBOT_URL', 'http://localhost:8080/')
 msg_keys  = ['action', 'date', 'dest', 'flags', 'fwd_date', 'fwd_src',
              'id', 'media', 'mention', 'out', 'reply', 'reply_id',
              'service', 'src', 'text', 'unread']
-chat_keys = ['first_name', 'id', 'info', 'last_name', 'name',
-             'phone', 'type', 'type_name', 'user', 'user_id',
-             'user_status', 'username']
-user_keys = ['id', 'name', 'type', 'type_name']       
+user_keys = ['first_name', 'id', 'last_name', 'name', 'phone', 'type',
+             'type_name', 'user', 'user_id', 'user_status', 'username']
+chat_keys = ['id', 'name', 'type', 'type_name']       
 
 
-def todict(obj):
+def serialize(obj, depth=0):
   """
-  Convert a tgl.Msg or tgl.Peer object into a dictionary in
-  order to be able to serialize it with JSON or pickle.
+  Handle tgl.Msg and tgl.Peer when serializing
+  data as a JSON object
   """
-
-  res   = {}
-  remap = {'dest':'to', 'src':'from',
-           'type_name':'type', 'type':'type_id'}
+  if depth > 1:
+    return {}
 
   if isinstance(obj, tgl.Peer):
     if obj.type_name == 'user':
@@ -34,14 +31,20 @@ def todict(obj):
       keys = chat_keys
   elif isinstance(obj, tgl.Msg):
     keys = msg_keys
+  elif isinstance(obj, datetime.datetime):
+    return str(obj)
+  else:
+    return obj
+
+  res   = {}
+  remap = {'dest':'to', 'src':'from',
+           'type_name':'type', 'type':'type_id'}
 
   for key in keys:
     val = getattr(obj, key)
     key = remap.get(key, key)
     if isinstance(val, (tgl.Msg, tgl.Peer)):
-      res[key] = todict(val)
-    elif isinstance(val, datetime.datetime):
-      res[key] = str(val)
+      res[key] = serialize(val, depth+1)
     else:
       res[key] = val
     
@@ -56,11 +59,16 @@ def receive_msg(msg):
   if msg.out or msg.src.id == robot_id:
     return
 
-  msg.src.mark_read(lambda _:_)
+  # mark message as read
+  msg.src.mark_read(lambda x:x)
 
+  # serialize the message object
+  data = json.dumps(msg, default=serialize)
+
+  # send it to the hubot endpoint
   req = request.Request(hubot_url + 'hubot_tg/msg_receive')
   req.add_header('Content-Type', 'application/json')
-  request.urlopen(req, json.dumps(todict(msg)).encode())
+  request.urlopen(req, data.encode())
 
   
 def update_chat(chat, changes):
