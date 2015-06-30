@@ -69,21 +69,20 @@ class Tg extends Adapter
     lines = lines.map (s) -> "#{envelope.user.name}: #{s}"
     @send envelope, lines...
 
-  entityToID: (entity) ->
-    entity.type + "#" + entity.id
+  get_id: (entity) ->
+    entity.type + '#' + entity.id
 
   run: ->
     self = @
     # We will listen here to incoming events from tg
     self.robot.router.post "/hubot_tg/msg_receive", (req, res) ->
       msg = req.body
-      room = if msg.to.type == 'user' then self.entityToID(msg.from) else self.entityToID(msg.to)
-      from = self.entityToID(msg.from)
-      user = self.robot.brain.userForId from, name: msg.from.print_name, room: room
+      room = if msg.to.type == 'user' then msg.from else msg.to
+      from = self.get_id msg.from
+      user = self.robot.brain.userForId from, name: msg.from.name, room: self.get_id room
       self.receive new TextMessage user, msg.text or '', msg.id
       res.end ""
     self.emit 'connected'
-
 
 exports.use = (robot) ->
   new Tg robot
