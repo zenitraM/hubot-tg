@@ -1,8 +1,8 @@
-http = require 'http'
-url  = require 'url'
-net  = require 'net'
-fs   = require 'fs'
-cp   = require 'child_process'
+needle = require 'needle'
+url = require 'url'
+net = require 'net'
+fs  = require 'fs'
+cp  = require 'child_process'
 
 { Adapter
 , TextMessage } = require 'hubot'
@@ -18,7 +18,7 @@ class Tg extends Adapter
     text = []
     lines.map (line) =>
       imageUrl = line.split('#')[0].split('?')[0]
-      if not imageUrl.match /\.jpe?g|png$/g
+      if not imageUrl.match /\.jpe?g|png$/ig
         text.push line
       else
         @robot.logger.info 'Found image ' + imageUrl
@@ -35,25 +35,21 @@ class Tg extends Adapter
       throw err if err
 
       filename = url.parse(imageUrl).pathname.split("/").pop()
-      file = fs.createWriteStream(@tempdir + filename)
-      options =
-        host: url.parse(imageUrl).host
-        port: 80
-        path: url.parse(imageUrl).pathname
 
-      http.get options, (res) =>
-        res.on("data", (data) -> file.write data).on "end", =>
-          file.end()
-          @robot.logger.info filename + " downloaded to " + @tempdir
-          callback @tempdir + url.parse(imageUrl).pathname.split('/').pop()
+      needle.get imageUrl, output: @tempdir + filename, (err, res, body) =>
+        @robot.logger.info filename + " downloaded to " + @tempdir
+        setTimeout (=> callback @tempdir + filename), 250
 
   send_photo: (envelope, filepath) ->
-    client = net.connect @port, @host, ->
+    client = net.connect @port, @host, =>
       message = "send_photo " + envelope.room + " " + filepath + "\n"
-      client.write message, ->
-        client.end ->
-          fs.unlink(filepath)
-          @robot.logger.infolog "File " + filepath + " deleted"
+      client.write message, =>
+        client.end =>
+          @robot.logger.info filepath + " sent, delete scheduled"
+          setTimeout (=>
+            fs.unlink(filepath)
+            @robot.logger.info "File " + filepath + " deleted"
+          ), 120000
 
   send_text: (envelope, lines) ->
     text = lines.join "\n"
