@@ -1,4 +1,5 @@
-needle = require 'needle'
+ne  = require 'needle'
+gm  = require 'gm'
 url = require 'url'
 net = require 'net'
 fs  = require 'fs'
@@ -18,7 +19,7 @@ class Tg extends Adapter
     text = []
     lines.map (line) =>
       imageUrl = line.split('#')[0].split('?')[0]
-      if not imageUrl.match /\.jpe?g|png$/ig
+      if not imageUrl.match /\.jpe?g|png|tiff$/ig
         text.push line
       else
         @robot.logger.info 'Found image ' + imageUrl
@@ -34,29 +35,33 @@ class Tg extends Adapter
     cp.exec mkdir, (err, stdout, stder) =>
       throw err if err
 
-      filename = url.parse(imageUrl).pathname.split("/").pop()
+      filename = url.parse(imageUrl).pathname.split('/').pop()
 
-      needle.get imageUrl, output: @tempdir + filename, (err, res, body) =>
-        @robot.logger.info filename + " downloaded to " + @tempdir
-        setTimeout (=> callback @tempdir + filename), 250
+      ne.get imageUrl, (err, res, body) =>
+        gm(body)
+        .noProfile()
+        .quality(70)
+        .resize(360000,'@>')
+        .write @tempdir + filename, (err) =>
+          @robot.logger.info filename + ' downloaded to ' + @tempdir
+          setTimeout (=> callback @tempdir + filename), 250
 
   send_photo: (envelope, filepath) ->
     client = net.connect @port, @host, =>
-      message = "send_photo " + envelope.room + " " + filepath + "\n"
+      message = "send_photo #{envelope.room} #{filepath} \n"
       client.write message, =>
         client.end =>
-          @robot.logger.info filepath + " sent, delete scheduled"
+          @robot.logger.info filepath + ' sent, delete scheduled'
           setTimeout (=>
-            fs.unlink(filepath)
-            @robot.logger.info "File " + filepath + " deleted"
+            fs.unlink filepath
+            @robot.logger.info "File #{filepath} deleted"
           ), 120000
 
   send_text: (envelope, lines) ->
-    text = lines.join "\n"
+    text = lines.join("\n").replace(/"/g, '\\"').replace(/\n/g, '\\n')
     client = net.connect @port, @host, ->
-      message = "msg "+envelope.room+" \""+text.replace(/"/g, '\\"').replace(/\n/g, '\\n')+"\"\n"
-      client.write message, ->
-        client.end()
+      message = "msg #{envelope.room} \"#{text}\"\n"
+      client.write message, -> client.end()
 
   emote: (envelope, lines...) ->
     @send envelope, "* #{line}" for line in lines
