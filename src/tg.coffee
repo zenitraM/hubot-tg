@@ -75,14 +75,15 @@ class Tg extends Adapter
 
   run: ->
     self = @
-    # We will listen here to incoming events from tg
-    self.robot.router.post "/hubot_tg/msg_receive", (req, res) ->
-      msg = req.body
+    self.robot.router.post '/hubot_tg/msg_receive', (req, res) ->
+      msg  = req.body
       room = if msg.to.type == 'user' then msg.from else msg.to
       from = self.get_id msg.from
-      user = self.robot.brain.userForId from, name: msg.from.name, room: self.get_id room
+      user = self.robot.brain.userForId from,
+             name: msg.from.name,
+             room: self.get_id room
       self.receive new TextMessage user, msg.text or '', msg.id
-      res.end ""
+      res.end ''
     self.emit 'connected'
 
 exports.use = (robot) ->
