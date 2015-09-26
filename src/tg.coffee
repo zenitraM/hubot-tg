@@ -1,7 +1,8 @@
 ne  = require 'needle'
+cr  = require 'crypto'
 gm  = require 'gm'
-url = require 'url'
 net = require 'net'
+url = require 'url'
 fs  = require 'fs'
 cp  = require 'child_process'
 
@@ -35,16 +36,19 @@ class Tg extends Adapter
     cp.exec mkdir, (err, stdout, stder) =>
       throw err if err
 
-      filename = url.parse(imageUrl).pathname.split('/').pop()
-
       ne.get imageUrl, (err, res, body) =>
         gm(body)
         .noProfile()
         .quality(70)
         .resize(360000,'@>')
-        .write @tempdir + filename, (err) =>
-          @robot.logger.info filename + ' downloaded to ' + @tempdir
-          setTimeout (=> callback @tempdir + filename), 250
+        .toBuffer (err, buffer) =>
+          ext = '.' + url.parse(imageUrl).pathname.split('.').pop()
+          filename = (cr.createHash('sha1').update(buffer).digest 'hex') + ext
+
+          fs.writeFile @tempdir + filename, buffer, (err) =>
+            return @robot.logger.error 'failed to save image:\n' + err if err
+            @robot.logger.info filename + ' downloaded to ' + @tempdir
+            setTimeout (=> callback @tempdir + filename), 250
 
   send_photo: (envelope, filepath) ->
     client = net.connect @port, @host, =>
