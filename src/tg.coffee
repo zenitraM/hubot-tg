@@ -1,4 +1,5 @@
 ne  = require 'needle'
+syn = require 'async'
 cr  = require 'crypto'
 gm  = require 'gm'
 net = require 'net'
@@ -17,19 +18,24 @@ class Tg extends Adapter
     @tempdir = process.env['HUBOT_TG_TEMP'] || '/tmp/hubot/'
 
   send: (envelope, lines...) ->
+    [..., last] = lines
+    if typeof last is 'function'
+       callback = lines.pop()
+    
     text = []
-    lines.map (line) =>
+    syn.eachSeries lines, ((line, done) =>
       imageUrl = line.split('#')[0].split('?')[0]
       if not imageUrl.match /\.jpe?g|png|tiff$/ig
         text.push line
+        done()
       else
         @robot.logger.info 'Found image ' + imageUrl
         if text.length
           @send_text envelope, text
           text = []
         @get_image line, (filepath) =>
-          @send_photo envelope, filepath
-    @send_text envelope, text
+          @send_photo envelope, filepath, -> done()
+      ), => @send_text envelope, text, -> callback() if callback?
 
   get_image: (imageUrl, callback) ->
     mkdir = 'mkdir -p ' + @tempdir
@@ -50,22 +56,27 @@ class Tg extends Adapter
             @robot.logger.info filename + ' downloaded to ' + @tempdir
             setTimeout (=> callback @tempdir + filename), 250
 
-  send_photo: (envelope, filepath) ->
+  send_photo: (envelope, filepath, callback) ->
     client = net.connect @port, @host, =>
       message = "send_photo #{envelope.room} #{filepath} \n"
-      client.write message, =>
-        client.end =>
-          @robot.logger.info filepath + ' sent, delete scheduled'
-          setTimeout (=>
-            fs.unlink filepath
-            @robot.logger.info "File #{filepath} deleted"
-          ), 120000
+      client.write message
+      client.on 'data', =>
+        client.end()
+        @robot.logger.info filepath + ' sent, delete scheduled'
+        setTimeout (=>
+          fs.unlink filepath
+          @robot.logger.info "File #{filepath} deleted"
+        ), 120000
+        callback() if callback?
 
-  send_text: (envelope, lines) ->
+  send_text: (envelope, lines, callback) ->
     text = lines.join("\n").replace(/"/g, '\\"').replace(/\n/g, '\\n')
     client = net.connect @port, @host, ->
       message = "msg #{envelope.room} \"#{text}\"\n"
-      client.write message, -> client.end()
+      client.write message
+      client.on 'data', ->
+        client.end()
+        callback() if callback?
 
   emote: (envelope, lines...) ->
     @send envelope, "* #{line}" for line in lines
