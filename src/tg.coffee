@@ -21,7 +21,7 @@ class Tg extends Adapter
     [..., last] = lines
     if typeof last is 'function'
        callback = lines.pop()
-    
+
     text = []
     syn.eachSeries lines, ((line, done) =>
       imageUrl = line.split('#')[0].split('?')[0]
@@ -42,7 +42,7 @@ class Tg extends Adapter
     cp.exec mkdir, (err, stdout, stder) =>
       throw err if err
 
-      ne.get imageUrl, (err, res, body) =>
+      ne.get imageUrl, follow_max: 5, (err, res, body) =>
         gm(body)
         .noProfile()
         .quality(70)
