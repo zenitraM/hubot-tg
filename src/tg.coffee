@@ -29,6 +29,7 @@ class Tg extends Adapter
         text.push line
         done()
       else
+        imageUrl = line
         @robot.logger.info 'Found image ' + imageUrl
         if text.length
           @send_text envelope, text
