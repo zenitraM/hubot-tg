@@ -21,22 +21,32 @@ class Tg extends Adapter
     [..., last] = lines
     if typeof last is 'function'
        callback = lines.pop()
-
     text = []
-    syn.eachSeries lines, ((line, done) =>
-      imageUrl = line.split('#')[0].split('?')[0]
-      if not imageUrl.match /\.jpe?g|png|tiff$/ig
-        text.push line
-        done()
-      else
-        imageUrl = line
-        @robot.logger.info 'Found image ' + imageUrl
-        if text.length
-          @send_text envelope, text
-          text = []
-        @get_image line, (filepath) =>
-          @send_photo envelope, filepath, -> done()
-      ), => @send_text envelope, text, -> callback() if callback?
+    syn.eachSeries lines, (@parse_line envelope, text), =>
+      @send_text envelope, text, -> callback() if callback?
+
+  parse_line: (envelope, text) -> (line, done) =>
+    accepted = ['image/jpeg', 'image/png', 'image/tiff']
+    push = ->
+      text.push line
+      done()
+
+    return push() if not url.parse(line).hostname?
+
+    ne.head line, (err, res) =>
+      @robot.logger.info 'found url ' + line
+      if err?
+        @robot.logger.warning 'headers download failed:'
+        console.log err
+        @robot.logger.warning 'url ignored'
+      if err? or not res.headers['content-type'] in accepted
+        return push()
+      @robot.logger.info 'found image: downloading...'
+      if text.length
+        @send_text envelope, text
+        text = []
+      @get_image line, (filepath) =>
+        @send_photo envelope, filepath, -> done()
 
   get_image: (imageUrl, callback) ->
     mkdir = 'mkdir -p ' + @tempdir
@@ -66,7 +76,7 @@ class Tg extends Adapter
         @robot.logger.info filepath + ' sent, delete scheduled'
         setTimeout (=>
           fs.unlink filepath
-          @robot.logger.info "File #{filepath} deleted"
+          @robot.logger.info "file #{filepath} deleted"
         ), 120000
         callback() if callback?
 
