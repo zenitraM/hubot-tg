@@ -39,7 +39,7 @@ class Tg extends Adapter
         @robot.logger.warning "headers download failed:\n#{err}"
         return push()
       if not (res.headers['content-type'].split(';')[0] in accepted)
-        @robot.logger.warning 'url ignored'
+        @robot.logger.info 'url ignored'
         return push()
       @robot.logger.info 'found image: downloading...'
       if text.length
