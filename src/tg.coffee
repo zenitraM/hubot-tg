@@ -36,10 +36,10 @@ class Tg extends Adapter
     ne.head line, (err, res) =>
       @robot.logger.info 'found url ' + line
       if err?
-        @robot.logger.warning 'headers download failed:'
-        console.log err
+        @robot.logger.warning "headers download failed:\n#{err}"
+        return push()
+      if not (res.headers['content-type'].split(';')[0] in accepted)
         @robot.logger.warning 'url ignored'
-      if err? or not res.headers['content-type'] in accepted
         return push()
       @robot.logger.info 'found image: downloading...'
       if text.length
