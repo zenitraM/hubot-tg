@@ -1,4 +1,10 @@
+# NOTICE: Project deprecated
+
+This project was based on an ugly hack over an existing proper Telegram client to do its job, so I'd avoid using it unless you need it for some specific purpose. Using a proper adapter over the Bot API like https://github.com/lukefx/hubot-telegram is probably a better idea.
+
+
 # hubot-tg
+
 This is a [Hubot](http://hubot.github.com/) adapter for [Telegram](http://telegram.org). 
 
 As there are not any fully-working Telegram client implementations in Node right now,
