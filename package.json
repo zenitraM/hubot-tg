@@ -8,17 +8,22 @@
   },
   "repository": {
     "type": "git",
-    "url": "http://github.com/zenitram/hubot-tg.git"
+    "url": "http://github.com/rnhmjoj/hubot-tg.git"
   },
   "keywords": [
     "hubot",
     "tg",
     "telegram"
   ],
-  "author": "Alejandro Martínez",
+  "author": "Rnhmjoj",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/zenitram/hubot-tg/issues"
+    "url": "https://github.com/rnhmjoj/hubot-tg/issues"
   },
-  "homepage": "https://github.com/zenitram/hubot-tg"
+  "homepage": "https://github.com/rnhmjoj/hubot-tg",
+  "dependencies": {
+    "async": "^1.4.2",
+    "gm": "^1.18.1",
+    "needle": "^0.10.0"
+  }
 }
