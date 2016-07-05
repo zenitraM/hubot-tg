@@ -20,7 +20,8 @@ to receive messages, and connects to tg telnet interface to send them.
 - [x] Sending/receiving group messages
 - [ ] Sending multiline messages (not supported on tg telnet interface)
 - [ ] Sending/receiving secret chat messages
-- [ ] Sending images and media
+- [x] Sending images
+- [ ] Sending media
 
 ## Setup
 
@@ -108,29 +109,14 @@ $ npm install zenitram/hubot-tg --save
 
 ### Run Hubot
 
-In one terminal, start telegram-cli on a specific port:
-
-```
-$ cd /path/to/hubot
-$ cd node_modules/hubot-tg
-$ /path/to/tg/bin/telegram-cli -s hubot.lua -P 1123
-```
-
-In another terminal, start Hubot. If you aren't using port 1123,
-you'll need to specify it with `HUBOT_TG_PORT`.
+In terminal, start hubot:
 
 ```
 $ cd /path/to/hubot
 $ bin/hubot -a tg
 ```
 
-## Config parameters
-
-### Hubot
-You can set ```HUBOT_TG_HOST``` and ```HUBOT_TG_PORT``` env variables to set how Hubot should connect to tg.
-
-### tg
-You can set the env variable ```TG_HUBOT_URL``` to where to find Hubot.
+The telegram-cli start as a child process, you don't have to worry.
 
 ## Acknowledgements
 - @yagop for [telegram-bot](https://github.com/yagop/telegram-bot), which inspired this

@@ -1,6 +1,8 @@
+package.path = package.path .. ";../?.lua"
+
 http = require("socket.http")
 ltn12 = require("ltn12")
-JSON = (loadfile 'JSON.lua')()
+JSON = require('JSON')
 started = 0
 our_id = 0
 hubot_endpoint = os.getenv("TG_HUBOT_URL")
@@ -68,7 +70,7 @@ function on_msg_receive (msg)
   end
   body = JSON:encode(msg)
   if(msg.from.id ~= our_id) then
-    http.request{
+    http.request {
       url = hubot_endpoint .. 'hubot_tg/msg_receive',
       method = 'POST',
       headers = { ["Content-Type"] = "application/json", ["Content-Length"] = body:len()},
@@ -77,6 +79,7 @@ function on_msg_receive (msg)
   end
 
   mark_read(get_receiver(msg), ok_cb, false)
+
 end
 
 function on_our_id (id)
